@@ -458,6 +458,180 @@
       .stat { border-right: none; border-bottom: 1px solid var(--border); }
       .stat:last-child { border-bottom: none; }
       .mission-block { padding: 36px 28px; }
+      .modal-content { padding: 40px 24px 32px; }
+      .modal-close { top: 16px; right: 16px; }
+    }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 8, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal-overlay.is-open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      transform: translateY(16px);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.is-open .modal {
+      transform: translateY(0);
+    }
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: var(--mono);
+    }
+    .modal-close:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .modal-content {
+      padding: 48px 40px 40px;
+    }
+    .modal-title {
+      font-family: var(--display);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--white);
+    }
+    .modal-subtitle {
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 32px;
+    }
+    .modal-form .field {
+      margin-bottom: 20px;
+    }
+    .modal-form label {
+      display: block;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .modal-form input,
+    .modal-form select,
+    .modal-form textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .modal-form input:focus,
+    .modal-form select:focus,
+    .modal-form textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .modal-form input::placeholder,
+    .modal-form textarea::placeholder {
+      color: rgba(255,255,255,0.2);
+    }
+    .modal-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .modal-form select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f0f0f8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+    .modal-form .submit-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 18px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.3s, background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-form .submit-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: translateY(-101%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .modal-form .submit-btn:hover::before { transform: translateY(0); }
+    .modal-form .submit-btn:hover { color: #050508; }
+    .modal-form .submit-btn span { position: relative; z-index: 1; }
+    .modal-form .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .modal-thanks {
+      display: none;
+      text-align: center;
+      padding: 24px 0;
+    }
+    .modal-thanks.is-visible {
+      display: block;
+    }
+    .modal-thanks h3 {
+      font-family: var(--display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .modal-thanks p {
+      font-size: 14px;
+      color: var(--dim);
+      line-height: 1.7;
+    }
+    .modal-form.is-hidden {
+      display: none;
     }
   </style>
 </head>
@@ -482,7 +656,7 @@
       every decision your agent makes — in real time.
     </p>
     <div>
-      <a href="mailto:hello@agentlens.it.com" class="cta-btn">
+      <a href="#" class="cta-btn js-open-modal">
         <span>Talk to us</span>
         <span class="arrow">→</span>
       </a>
@@ -565,7 +739,7 @@
   <div class="final-cta reveal">
     <h2>Ready to see<br><span style="background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">inside?</span></h2>
     <p>We're onboarding the first teams now. Come talk to us.</p>
-    <a href="mailto:hello@agentlens.it.com" class="cta-btn">
+    <a href="#" class="cta-btn js-open-modal">
       <span>Talk to us</span>
       <span class="arrow">→</span>
     </a>
@@ -578,6 +752,64 @@
   <span class="footer-logo">AgentLens</span>
   <span>© 2026 AgentLens. All rights reserved.</span>
 </footer>
+
+<!-- Modal -->
+<div class="modal-overlay" id="contactModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-labelledby="modalTitle">
+    <button type="button" class="modal-close" id="modalClose" aria-label="Close">×</button>
+    <div class="modal-content">
+      <h2 class="modal-title" id="modalTitle">Talk to us</h2>
+      <p class="modal-subtitle">We're onboarding the first teams now.</p>
+
+      <div class="modal-form" id="modalForm">
+        <form action="https://formspree.io/f/mlgwpqoo" method="POST" id="contactForm">
+          <div class="field">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="field">
+            <label for="email">Work Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="field">
+            <label for="company">Company/Product Name</label>
+            <input type="text" id="company" name="company">
+          </div>
+          <div class="field">
+            <label for="building">What are you building?</label>
+            <textarea id="building" name="building" rows="4"></textarea>
+          </div>
+          <div class="field">
+            <label for="pain_point">What's your biggest pain point with AI agents?</label>
+            <textarea id="pain_point" name="pain_point" rows="4"></textarea>
+          </div>
+          <div class="field">
+            <label for="agents_count">How many agents are you running in production?</label>
+            <select id="agents_count" name="agents_count">
+              <option value="">Select...</option>
+              <option value="Just exploring">Just exploring</option>
+              <option value="1–5">1–5</option>
+              <option value="5–20">5–20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="how_hear">How did you hear about us?</label>
+            <input type="text" id="how_hear" name="how_hear">
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <span>Submit</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="modal-thanks" id="modalThanks">
+        <h3>Thank you!</h3>
+        <p>We've received your message and will get back to you soon.</p>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   // Custom cursor
@@ -613,6 +845,69 @@
       ring.style.opacity = '0.5';
       ring.style.transform = 'translate(-50%,-50%) scale(1)';
     });
+  });
+
+  // Modal
+  const modal = document.getElementById('contactModal');
+  const modalForm = document.getElementById('modalForm');
+  const modalThanks = document.getElementById('modalThanks');
+  const contactForm = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function openModal() {
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.js-open-modal').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      modalForm.classList.remove('is-hidden');
+      modalThanks.classList.remove('is-visible');
+      contactForm.reset();
+      openModal();
+    });
+  });
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+  });
+
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.querySelector('span').textContent = 'Sending...';
+
+    const formData = new FormData(contactForm);
+    try {
+      const res = await fetch('https://formspree.io/f/mlgwpqoo', {
+        method: 'POST',
+        body: formData,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        modalForm.classList.add('is-hidden');
+        modalThanks.classList.add('is-visible');
+      } else {
+        throw new Error('Submission failed');
+      }
+    } catch (err) {
+      submitBtn.querySelector('span').textContent = 'Try again';
+    }
+    submitBtn.disabled = false;
   });
 
   // Scroll reveal
