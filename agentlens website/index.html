@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgentLens — See Inside Your AI Agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050508;
+      --surface: #0c0c14;
+      --border: rgba(255,255,255,0.07);
+      --accent: #00f5a0;
+      --accent2: #00b4d8;
+      --dim: rgba(255,255,255,0.35);
+      --white: #f0f0f8;
+      --mono: 'JetBrains Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease, width 0.2s, height 0.2s, background 0.2s;
+      mix-blend-mode: difference;
+    }
+    .cursor-ring {
+      width: 36px; height: 36px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.18s ease, opacity 0.2s;
+      opacity: 0.5;
+    }
+
+    /* Grid background */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,245,160,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,160,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Glow blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,245,160,0.08), transparent 70%);
+      top: -200px; right: -100px;
+    }
+    .blob-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,180,216,0.07), transparent 70%);
+      bottom: 100px; left: -150px;
+    }
+
+    /* Main wrapper */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 0 60px;
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.2s forwards;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .eyebrow::before {
+      content: '';
+      display: block;
+      width: 32px; height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(52px, 8vw, 110px);
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.35s forwards;
+    }
+
+    h1 .accent-word {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-family: var(--mono);
+      font-size: clamp(14px, 1.8vw, 17px);
+      color: var(--dim);
+      line-height: 1.75;
+      max-width: 540px;
+      margin-bottom: 64px;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.5s forwards;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 18px 40px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      transition: color 0.3s ease;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.65s forwards;
+      cursor: none;
+    }
+    .cta-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: translateX(-101%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cta-btn:hover::before { transform: translateX(0); }
+    .cta-btn:hover { color: #050508; }
+    .cta-btn span { position: relative; z-index: 1; }
+    .cta-btn .arrow {
+      position: relative; z-index: 1;
+      transition: transform 0.3s ease;
+    }
+    .cta-btn:hover .arrow { transform: translateX(5px); }
+
+    /* ─── STATS ─── */
+    .stats {
+      display: flex;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin: 100px 0;
+      opacity: 0;
+      animation: fadeUp 1s ease 0.8s forwards;
+    }
+    .stat {
+      flex: 1;
+      padding: 40px 32px;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--display);
+      font-size: clamp(36px, 4vw, 56px);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--white), var(--dim));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* ─── PROBLEM ─── */
+    .section { margin: 120px 0; }
+
+    .section-tag {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 32px;
+      max-width: 600px;
+    }
+
+    .section-body {
+      font-size: 15px;
+      color: var(--dim);
+      line-height: 1.9;
+      max-width: 520px;
+    }
+
+    /* Terminal block */
+    .terminal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 28px 32px;
+      margin-top: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .terminal::before {
+      content: '● ● ●';
+      position: absolute;
+      top: 12px; left: 20px;
+      font-size: 10px;
+      letter-spacing: 6px;
+      color: rgba(255,255,255,0.15);
+    }
+    .terminal-line {
+      font-size: 13px;
+      line-height: 2;
+      color: rgba(255,255,255,0.5);
+      margin-top: 16px;
+    }
+    .terminal-line .cmd { color: var(--accent); }
+    .terminal-line .err { color: #ff6b6b; }
+    .terminal-line .ok { color: var(--accent); }
+    .terminal-line .muted { color: rgba(255,255,255,0.2); }
+
+    /* ─── HOW IT WORKS ─── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-top: 60px;
+    }
+    .step {
+      background: var(--bg);
+      padding: 44px 36px;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+    .step:hover { background: var(--surface); }
+    .step-num {
+      font-family: var(--display);
+      font-size: 72px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.04);
+      line-height: 1;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+    .step-title {
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .step-body {
+      font-size: 13px;
+      color: var(--white);
+      line-height: 1.8;
+    }
+    .step-accent {
+      display: inline-block;
+      width: 28px; height: 1px;
+      background: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    /* ─── MISSION ─── */
+    .mission-block {
+      border-left: 2px solid var(--accent);
+      padding: 48px 60px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin: 120px 0;
+      position: relative;
+    }
+    .mission-block::before {
+      content: '"';
+      font-family: var(--display);
+      font-size: 200px;
+      color: rgba(0,245,160,0.04);
+      position: absolute;
+      top: -20px; right: 40px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .mission-text {
+      font-family: var(--display);
+      font-size: clamp(22px, 2.8vw, 34px);
+      font-weight: 700;
+      line-height: 1.4;
+      max-width: 620px;
+      position: relative;
+      z-index: 1;
+    }
+    .mission-sub {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    /* ─── FINAL CTA ─── */
+    .final-cta {
+      text-align: center;
+      padding: 120px 0 160px;
+    }
+    .final-cta h2 {
+      font-family: var(--display);
+      font-size: clamp(40px, 6vw, 80px);
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+    .final-cta p {
+      font-size: 14px;
+      color: var(--dim);
+      margin-bottom: 48px;
+      letter-spacing: 0.05em;
+    }
+    .final-cta .domain {
+      display: block;
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.2em;
+      margin-top: 48px;
+      text-transform: uppercase;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 28px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.15em;
+    }
+    .footer-logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 14px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Scanline overlay */
+    .scanline {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Blinking cursor after eyebrow */
+    .blink {
+      animation: blink 1s step-end infinite;
+      color: var(--accent);
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    @media (max-width: 768px) {
+      .steps { grid-template-columns: 1fr; }
+      .stats { flex-direction: column; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat:last-child { border-bottom: none; }
+      .mission-block { padding: 36px 28px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="eyebrow">AgentLens<span class="blink">_</span></div>
+    <h1>See inside<br>your <span class="accent-word">AI agents.</span><br>Finally.</h1>
+    <p class="hero-sub">
+      When your agent fails in production, you shouldn't have to guess why.
+      AgentLens gives you full session replay and trace-level visibility into
+      every decision your agent makes — in real time.
+    </p>
+    <div>
+      <a href="mailto:hello@agentlens.it.com" class="cta-btn">
+        <span>Talk to us</span>
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats reveal">
+    <div class="stat">
+      <div class="stat-num">1</div>
+      <div class="stat-label">Line to instrument</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">&lt;5s</div>
+      <div class="stat-label">To find any failure</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Agent visibility</div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section class="section reveal">
+    <div class="section-tag">// The problem</div>
+    <h2 class="section-title">Your agents are black boxes. That needs to stop.</h2>
+    <p class="section-body">
+      Every team shipping AI agents hits the same wall: something breaks in production and there's nothing to look at. No trace. No context. Just logs that tell you what happened, not why. You spend hours reconstructing what the agent was thinking.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-line muted"># Traditional debugging experience</div>
+      <div class="terminal-line"><span class="err">[ERROR]</span> Agent run failed — exit code 1</div>
+      <div class="terminal-line muted">timestamp: 2026-02-23T04:12:38Z</div>
+      <div class="terminal-line muted">...no further context available</div>
+      <div class="terminal-line">&nbsp;</div>
+      <div class="terminal-line muted"># With AgentLens</div>
+      <div class="terminal-line"><span class="ok">[TRACE]</span> Step 3/5 — fetch_api → <span class="err">timeout after 5002ms</span></div>
+      <div class="terminal-line"><span class="ok">[REPLAY]</span> Full session captured. Token cost: $0.0034</div>
+      <div class="terminal-line"><span class="ok">[DEBUG]</span> Root cause identified in 4 seconds. ✓</div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section reveal">
+    <div class="section-tag">// How it works</div>
+    <h2 class="section-title">Built for how agents actually run.</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-accent"></div>
+        <div class="step-title">Instrument in seconds</div>
+        <div class="step-body">One SDK import. Every LLM call, tool use, and sub-agent invocation is automatically captured — no manual logging.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-accent"></div>
+        <div class="step-title">Watch every decision</div>
+        <div class="step-body">Session replay gives you a step-by-step timeline of your agent's execution. See exactly what prompt was sent, what came back, how long it took.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-accent"></div>
+        <div class="step-title">Fix failures fast</div>
+        <div class="step-body">Failures surface instantly with full context — the exact span, the input that caused it, the error. Hours of debugging become seconds.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSION -->
+  <div class="mission-block reveal">
+    <div class="mission-text">
+      AI agents should be observable by default. We're building the infrastructure layer that makes that possible — for every team shipping agents, at any scale.
+    </div>
+    <div class="mission-sub">— Mission, AgentLens</div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final-cta reveal">
+    <h2>Ready to see<br><span style="background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">inside?</span></h2>
+    <p>We're onboarding the first teams now. Come talk to us.</p>
+    <a href="mailto:hello@agentlens.it.com" class="cta-btn">
+      <span>Talk to us</span>
+      <span class="arrow">→</span>
+    </a>
+    <span class="domain">agentlens.it.com</span>
+  </div>
+
+</main>
+
+<footer>
+  <span class="footer-logo">AgentLens</span>
+  <span>© 2026 AgentLens. All rights reserved.</span>
+</footer>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+
+  function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width = '16px';
+      cursor.style.height = '16px';
+      ring.style.opacity = '1';
+      ring.style.transform = 'translate(-50%,-50%) scale(1.5)';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width = '10px';
+      cursor.style.height = '10px';
+      ring.style.opacity = '0.5';
+      ring.style.transform = 'translate(-50%,-50%) scale(1)';
+    });
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

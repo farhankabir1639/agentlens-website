@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AgentLens — See Inside Your AI Agents</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #050508;
+      --surface: #0c0c14;
+      --border: rgba(255,255,255,0.07);
+      --accent: #00f5a0;
+      --accent2: #00b4d8;
+      --dim: rgba(255,255,255,0.35);
+      --white: #f0f0f8;
+      --mono: 'JetBrains Mono', monospace;
+      --display: 'Syne', sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--mono);
+      min-height: 100vh;
+      overflow-x: hidden;
+      cursor: none;
+    }
+
+    /* Custom cursor */
+    .cursor {
+      width: 10px; height: 10px;
+      background: var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease, width 0.2s, height 0.2s, background 0.2s;
+      mix-blend-mode: difference;
+    }
+    .cursor-ring {
+      width: 36px; height: 36px;
+      border: 1px solid var(--accent);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9998;
+      transform: translate(-50%, -50%);
+      transition: transform 0.18s ease, opacity 0.2s;
+      opacity: 0.5;
+    }
+
+    /* Grid background */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(0,245,160,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,245,160,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Glow blobs */
+    .blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .blob-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(0,245,160,0.08), transparent 70%);
+      top: -200px; right: -100px;
+    }
+    .blob-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(0,180,216,0.07), transparent 70%);
+      bottom: 100px; left: -150px;
+    }
+
+    /* Main wrapper */
+    main {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 32px;
+    }
+
+    /* ─── HERO ─── */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 80px 0 60px;
+    }
+
+    .eyebrow {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 32px;
+      opacity: 0;
+      animation: fadeUp 0.8s ease 0.2s forwards;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .eyebrow::before {
+      content: '';
+      display: block;
+      width: 32px; height: 1px;
+      background: var(--accent);
+    }
+
+    h1 {
+      font-family: var(--display);
+      font-size: clamp(52px, 8vw, 110px);
+      font-weight: 800;
+      line-height: 0.92;
+      letter-spacing: -0.03em;
+      margin-bottom: 40px;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.35s forwards;
+    }
+
+    h1 .accent-word {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-family: var(--mono);
+      font-size: clamp(14px, 1.8vw, 17px);
+      color: var(--dim);
+      line-height: 1.75;
+      max-width: 540px;
+      margin-bottom: 64px;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.5s forwards;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      padding: 18px 40px;
+      text-decoration: none;
+      position: relative;
+      overflow: hidden;
+      transition: color 0.3s ease;
+      opacity: 0;
+      animation: fadeUp 0.9s ease 0.65s forwards;
+      cursor: none;
+    }
+    .cta-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: translateX(-101%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cta-btn:hover::before { transform: translateX(0); }
+    .cta-btn:hover { color: #050508; }
+    .cta-btn span { position: relative; z-index: 1; }
+    .cta-btn .arrow {
+      position: relative; z-index: 1;
+      transition: transform 0.3s ease;
+    }
+    .cta-btn:hover .arrow { transform: translateX(5px); }
+
+    /* ─── STATS ─── */
+    .stats {
+      display: flex;
+      gap: 0;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin: 100px 0;
+      opacity: 0;
+      animation: fadeUp 1s ease 0.8s forwards;
+    }
+    .stat {
+      flex: 1;
+      padding: 40px 32px;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num {
+      font-family: var(--display);
+      font-size: clamp(36px, 4vw, 56px);
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--white), var(--dim));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1;
+      margin-bottom: 10px;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+    }
+
+    /* ─── PROBLEM ─── */
+    .section { margin: 120px 0; }
+
+    .section-tag {
+      font-size: 10px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 24px;
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-size: clamp(32px, 4vw, 52px);
+      font-weight: 700;
+      line-height: 1.1;
+      margin-bottom: 32px;
+      max-width: 600px;
+    }
+
+    .section-body {
+      font-size: 15px;
+      color: var(--dim);
+      line-height: 1.9;
+      max-width: 520px;
+    }
+
+    /* Terminal block */
+    .terminal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      padding: 28px 32px;
+      margin-top: 48px;
+      position: relative;
+      overflow: hidden;
+    }
+    .terminal::before {
+      content: '● ● ●';
+      position: absolute;
+      top: 12px; left: 20px;
+      font-size: 10px;
+      letter-spacing: 6px;
+      color: rgba(255,255,255,0.15);
+    }
+    .terminal-line {
+      font-size: 13px;
+      line-height: 2;
+      color: rgba(255,255,255,0.5);
+      margin-top: 16px;
+    }
+    .terminal-line .cmd { color: var(--accent); }
+    .terminal-line .err { color: #ff6b6b; }
+    .terminal-line .ok { color: var(--accent); }
+    .terminal-line .muted { color: rgba(255,255,255,0.2); }
+
+    /* ─── HOW IT WORKS ─── */
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      margin-top: 60px;
+    }
+    .step {
+      background: var(--bg);
+      padding: 44px 36px;
+      position: relative;
+      transition: background 0.3s ease;
+    }
+    .step:hover { background: var(--surface); }
+    .step-num {
+      font-family: var(--display);
+      font-size: 72px;
+      font-weight: 800;
+      color: rgba(255,255,255,0.04);
+      line-height: 1;
+      margin-bottom: 20px;
+      user-select: none;
+    }
+    .step-title {
+      font-family: var(--display);
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 14px;
+    }
+    .step-body {
+      font-size: 13px;
+      color: var(--white);
+      line-height: 1.8;
+    }
+    .step-accent {
+      display: inline-block;
+      width: 28px; height: 1px;
+      background: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    /* ─── MISSION ─── */
+    .mission-block {
+      border-left: 2px solid var(--accent);
+      padding: 48px 60px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      margin: 120px 0;
+      position: relative;
+    }
+    .mission-block::before {
+      content: '"';
+      font-family: var(--display);
+      font-size: 200px;
+      color: rgba(0,245,160,0.04);
+      position: absolute;
+      top: -20px; right: 40px;
+      line-height: 1;
+      pointer-events: none;
+    }
+    .mission-text {
+      font-family: var(--display);
+      font-size: clamp(22px, 2.8vw, 34px);
+      font-weight: 700;
+      line-height: 1.4;
+      max-width: 620px;
+      position: relative;
+      z-index: 1;
+    }
+    .mission-sub {
+      margin-top: 24px;
+      font-size: 13px;
+      color: var(--dim);
+      letter-spacing: 0.08em;
+    }
+
+    /* ─── FINAL CTA ─── */
+    .final-cta {
+      text-align: center;
+      padding: 120px 0 160px;
+    }
+    .final-cta h2 {
+      font-family: var(--display);
+      font-size: clamp(40px, 6vw, 80px);
+      font-weight: 800;
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+    .final-cta p {
+      font-size: 14px;
+      color: var(--dim);
+      margin-bottom: 48px;
+      letter-spacing: 0.05em;
+    }
+    .final-cta .domain {
+      display: block;
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.2em;
+      margin-top: 48px;
+      text-transform: uppercase;
+    }
+
+    /* ─── FOOTER ─── */
+    footer {
+      position: relative;
+      z-index: 1;
+      border-top: 1px solid var(--border);
+      padding: 28px 32px;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: rgba(255,255,255,0.15);
+      letter-spacing: 0.15em;
+    }
+    .footer-logo {
+      font-family: var(--display);
+      font-weight: 800;
+      font-size: 14px;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ─── ANIMATIONS ─── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.8s ease, transform 0.8s ease;
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* Scanline overlay */
+    .scanline {
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0,0,0,0.03) 2px,
+        rgba(0,0,0,0.03) 4px
+      );
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Blinking cursor after eyebrow */
+    .blink {
+      animation: blink 1s step-end infinite;
+      color: var(--accent);
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    @media (max-width: 768px) {
+      .steps { grid-template-columns: 1fr; }
+      .stats { flex-direction: column; }
+      .stat { border-right: none; border-bottom: 1px solid var(--border); }
+      .stat:last-child { border-bottom: none; }
+      .mission-block { padding: 36px 28px; }
+      .modal-content { padding: 40px 24px 32px; }
+      .modal-close { top: 16px; right: 16px; }
+    }
+
+    /* ─── MODAL ─── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 5, 8, 0.85);
+      backdrop-filter: blur(8px);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal-overlay.is-open {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      max-width: 520px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      position: relative;
+      transform: translateY(16px);
+      transition: transform 0.3s ease;
+    }
+    .modal-overlay.is-open .modal {
+      transform: translateY(0);
+    }
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-size: 18px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: border-color 0.2s, color 0.2s;
+      font-family: var(--mono);
+    }
+    .modal-close:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    .modal-content {
+      padding: 48px 40px 40px;
+    }
+    .modal-title {
+      font-family: var(--display);
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--white);
+    }
+    .modal-subtitle {
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 32px;
+    }
+    .modal-form .field {
+      margin-bottom: 20px;
+    }
+    .modal-form label {
+      display: block;
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .modal-form input,
+    .modal-form select,
+    .modal-form textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--white);
+      font-family: var(--mono);
+      font-size: 14px;
+      padding: 14px 16px;
+      transition: border-color 0.2s;
+    }
+    .modal-form input:focus,
+    .modal-form select:focus,
+    .modal-form textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .modal-form input::placeholder,
+    .modal-form textarea::placeholder {
+      color: rgba(255,255,255,0.2);
+    }
+    .modal-form textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    .modal-form select {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23f0f0f8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      padding-right: 40px;
+    }
+    .modal-form .submit-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 18px;
+      background: transparent;
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 0.3s, background 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    .modal-form .submit-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      transform: translateY(-101%);
+      transition: transform 0.35s cubic-bezier(0.4,0,0.2,1);
+    }
+    .modal-form .submit-btn:hover::before { transform: translateY(0); }
+    .modal-form .submit-btn:hover { color: #050508; }
+    .modal-form .submit-btn span { position: relative; z-index: 1; }
+    .modal-form .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .modal-thanks {
+      display: none;
+      text-align: center;
+      padding: 24px 0;
+    }
+    .modal-thanks.is-visible {
+      display: block;
+    }
+    .modal-thanks h3 {
+      font-family: var(--display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .modal-thanks p {
+      font-size: 14px;
+      color: var(--dim);
+      line-height: 1.7;
+    }
+    .modal-form.is-hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+<div class="grid-bg"></div>
+<div class="scanline"></div>
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<main>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="eyebrow">AgentLens<span class="blink">_</span></div>
+    <h1>See inside<br>your <span class="accent-word">AI agents.</span><br>Finally.</h1>
+    <p class="hero-sub">
+      When your agent fails in production, you shouldn't have to guess why.
+      AgentLens gives you full session replay and trace-level visibility into
+      every decision your agent makes — in real time.
+    </p>
+    <div>
+      <a href="#" class="cta-btn js-open-modal">
+        <span>Talk to us</span>
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats reveal">
+    <div class="stat">
+      <div class="stat-num">1</div>
+      <div class="stat-label">Line to instrument</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">&lt;5s</div>
+      <div class="stat-label">To find any failure</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">100%</div>
+      <div class="stat-label">Agent visibility</div>
+    </div>
+  </div>
+
+  <!-- PROBLEM -->
+  <section class="section reveal">
+    <div class="section-tag">// The problem</div>
+    <h2 class="section-title">Your agents are black boxes. That needs to stop.</h2>
+    <p class="section-body">
+      Every team shipping AI agents hits the same wall: something breaks in production and there's nothing to look at. No trace. No context. Just logs that tell you what happened, not why. You spend hours reconstructing what the agent was thinking.
+    </p>
+
+    <div class="terminal">
+      <div class="terminal-line muted"># Traditional debugging experience</div>
+      <div class="terminal-line"><span class="err">[ERROR]</span> Agent run failed — exit code 1</div>
+      <div class="terminal-line muted">timestamp: 2026-02-23T04:12:38Z</div>
+      <div class="terminal-line muted">...no further context available</div>
+      <div class="terminal-line">&nbsp;</div>
+      <div class="terminal-line muted"># With AgentLens</div>
+      <div class="terminal-line"><span class="ok">[TRACE]</span> Step 3/5 — fetch_api → <span class="err">timeout after 5002ms</span></div>
+      <div class="terminal-line"><span class="ok">[REPLAY]</span> Full session captured. Token cost: $0.0034</div>
+      <div class="terminal-line"><span class="ok">[DEBUG]</span> Root cause identified in 4 seconds. ✓</div>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="section reveal">
+    <div class="section-tag">// How it works</div>
+    <h2 class="section-title">Built for how agents actually run.</h2>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-accent"></div>
+        <div class="step-title">Instrument in seconds</div>
+        <div class="step-body">One SDK import. Every LLM call, tool use, and sub-agent invocation is automatically captured — no manual logging.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-accent"></div>
+        <div class="step-title">Watch every decision</div>
+        <div class="step-body">Session replay gives you a step-by-step timeline of your agent's execution. See exactly what prompt was sent, what came back, how long it took.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-accent"></div>
+        <div class="step-title">Fix failures fast</div>
+        <div class="step-body">Failures surface instantly with full context — the exact span, the input that caused it, the error. Hours of debugging become seconds.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MISSION -->
+  <div class="mission-block reveal">
+    <div class="mission-text">
+      AI agents should be observable by default. We're building the infrastructure layer that makes that possible — for every team shipping agents, at any scale.
+    </div>
+    <div class="mission-sub">— Mission, AgentLens</div>
+  </div>
+
+  <!-- FINAL CTA -->
+  <div class="final-cta reveal">
+    <h2>Ready to see<br><span style="background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">inside?</span></h2>
+    <p>We're onboarding the first teams now. Come talk to us.</p>
+    <a href="#" class="cta-btn js-open-modal">
+      <span>Talk to us</span>
+      <span class="arrow">→</span>
+    </a>
+    <span class="domain">agentlens.it.com</span>
+  </div>
+
+</main>
+
+<footer>
+  <span class="footer-logo">AgentLens</span>
+  <span>© 2026 AgentLens. All rights reserved.</span>
+</footer>
+
+<!-- Modal -->
+<div class="modal-overlay" id="contactModal" aria-hidden="true">
+  <div class="modal" role="dialog" aria-labelledby="modalTitle">
+    <button type="button" class="modal-close" id="modalClose" aria-label="Close">×</button>
+    <div class="modal-content">
+      <h2 class="modal-title" id="modalTitle">Talk to us</h2>
+      <p class="modal-subtitle">We're onboarding the first teams now.</p>
+
+      <div class="modal-form" id="modalForm">
+        <form action="https://formspree.io/f/mlgwpqoo" method="POST" id="contactForm">
+          <div class="field">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" required>
+          </div>
+          <div class="field">
+            <label for="email">Work Email</label>
+            <input type="email" id="email" name="email" required>
+          </div>
+          <div class="field">
+            <label for="company">Company/Product Name</label>
+            <input type="text" id="company" name="company">
+          </div>
+          <div class="field">
+            <label for="building">What are you building?</label>
+            <textarea id="building" name="building" rows="4"></textarea>
+          </div>
+          <div class="field">
+            <label for="pain_point">What's your biggest pain point with AI agents?</label>
+            <textarea id="pain_point" name="pain_point" rows="4"></textarea>
+          </div>
+          <div class="field">
+            <label for="agents_count">How many agents are you running in production?</label>
+            <select id="agents_count" name="agents_count">
+              <option value="">Select...</option>
+              <option value="Just exploring">Just exploring</option>
+              <option value="1–5">1–5</option>
+              <option value="5–20">5–20</option>
+              <option value="20+">20+</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="how_hear">How did you hear about us?</label>
+            <input type="text" id="how_hear" name="how_hear">
+          </div>
+          <button type="submit" class="submit-btn" id="submitBtn">
+            <span>Submit</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="modal-thanks" id="modalThanks">
+        <h3>Thank you!</h3>
+        <p>We've received your message and will get back to you soon.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Custom cursor
+  const cursor = document.getElementById('cursor');
+  const ring = document.getElementById('cursorRing');
+  let mx = 0, my = 0, rx = 0, ry = 0;
+
+  document.addEventListener('mousemove', e => {
+    mx = e.clientX; my = e.clientY;
+    cursor.style.left = mx + 'px';
+    cursor.style.top = my + 'px';
+  });
+
+  function animateRing() {
+    rx += (mx - rx) * 0.12;
+    ry += (my - ry) * 0.12;
+    ring.style.left = rx + 'px';
+    ring.style.top = ry + 'px';
+    requestAnimationFrame(animateRing);
+  }
+  animateRing();
+
+  document.querySelectorAll('a, button').forEach(el => {
+    el.addEventListener('mouseenter', () => {
+      cursor.style.width = '16px';
+      cursor.style.height = '16px';
+      ring.style.opacity = '1';
+      ring.style.transform = 'translate(-50%,-50%) scale(1.5)';
+    });
+    el.addEventListener('mouseleave', () => {
+      cursor.style.width = '10px';
+      cursor.style.height = '10px';
+      ring.style.opacity = '0.5';
+      ring.style.transform = 'translate(-50%,-50%) scale(1)';
+    });
+  });
+
+  // Modal
+  const modal = document.getElementById('contactModal');
+  const modalForm = document.getElementById('modalForm');
+  const modalThanks = document.getElementById('modalThanks');
+  const contactForm = document.getElementById('contactForm');
+  const submitBtn = document.getElementById('submitBtn');
+
+  function openModal() {
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  document.querySelectorAll('.js-open-modal').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      modalForm.classList.remove('is-hidden');
+      modalThanks.classList.remove('is-visible');
+      contactForm.reset();
+      openModal();
+    });
+  });
+
+  document.getElementById('modalClose').addEventListener('click', closeModal);
+
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) closeModal();
+  });
+
+  contactForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    submitBtn.disabled = true;
+    submitBtn.querySelector('span').textContent = 'Sending...';
+
+    const formData = new FormData(contactForm);
+    try {
+      const res = await fetch('https://formspree.io/f/mlgwpqoo', {
+        method: 'POST',
+        body: formData,
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        modalForm.classList.add('is-hidden');
+        modalThanks.classList.add('is-visible');
+      } else {
+        throw new Error('Submission failed');
+      }
+    } catch (err) {
+      submitBtn.querySelector('span').textContent = 'Try again';
+    }
+    submitBtn.disabled = false;
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>
