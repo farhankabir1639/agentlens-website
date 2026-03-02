@@ -4,6 +4,7 @@ import { Footer } from "@/app/components/Footer";
 import { Home } from "@/app/pages/Home";
 import { BlogList } from "@/app/pages/BlogList";
 import { BlogPost } from "@/app/pages/BlogPost";
+import { PrivacyPolicy } from "@/app/pages/PrivacyPolicy";
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/blog" element={<BlogList />} />
           <Route path="/blog/:id" element={<BlogPost />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
         </Routes>
         <Footer />
       </div>
