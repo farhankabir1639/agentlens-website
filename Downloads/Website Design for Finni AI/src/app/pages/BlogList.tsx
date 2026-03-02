@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { BlogCard } from "@/app/components/BlogCard";
-import { blogPosts } from "@/data/blog-posts";
+import { BlogCard } from "../components/BlogCard";
+import { blogPosts } from "../../data/blog-posts";
 import { Search } from "lucide-react";
 
 const categories = ["All", "Money Tips", "Technology", "Budgeting", "Saving", "Credit"];

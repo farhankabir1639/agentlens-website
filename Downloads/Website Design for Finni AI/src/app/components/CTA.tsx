@@ -1,6 +1,3 @@
-import { Button } from "@/app/components/ui/button";
-import { ArrowRight } from "lucide-react";
-
 export function CTA() {
   return (
     <section className="py-24 px-6 bg-slate-950 relative overflow-hidden">
@@ -23,22 +20,13 @@ export function CTA() {
           Join thousands of people who are already saving more and stressing less about money.
         </p>
         
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <Button 
-            size="lg" 
-            className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white rounded-lg px-8 py-6 text-lg shadow-lg shadow-cyan-500/25 hover:shadow-cyan-500/40 transition-all group"
+        <div className="flex items-center justify-center">
+          <span
+            className="inline-flex items-center justify-center rounded-lg px-8 py-6 text-lg font-medium text-white bg-gradient-to-r from-blue-500 to-green-500 cursor-not-allowed opacity-90"
+            aria-disabled="true"
           >
-            Start Free Today
-            <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-          </Button>
-          
-          <Button 
-            size="lg" 
-            variant="outline" 
-            className="border-2 border-cyan-500/30 text-cyan-100 hover:bg-cyan-500/10 hover:border-cyan-500/50 rounded-lg px-8 py-6 text-lg bg-slate-900/50 backdrop-blur-sm"
-          >
-            Schedule a Demo
-          </Button>
+            Coming Soon for Android
+          </span>
         </div>
         
         <p className="text-sm text-gray-500 mt-6">

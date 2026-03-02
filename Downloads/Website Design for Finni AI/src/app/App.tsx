@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { Header } from "@/app/components/Header";
-import { Footer } from "@/app/components/Footer";
-import { Home } from "@/app/pages/Home";
-import { BlogList } from "@/app/pages/BlogList";
-import { BlogPost } from "@/app/pages/BlogPost";
-import { PrivacyPolicy } from "@/app/pages/PrivacyPolicy";
+import { Header } from "./components/Header";
+import { Footer } from "./components/Footer";
+import { Home } from "./pages/Home";
+import { BlogList } from "./pages/BlogList";
+import { BlogPost } from "./pages/BlogPost";
+import { PrivacyPolicy } from "./pages/PrivacyPolicy";
 
 export default function App() {
   return (

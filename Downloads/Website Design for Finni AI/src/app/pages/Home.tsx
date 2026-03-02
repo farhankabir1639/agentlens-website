@@ -1,7 +1,7 @@
-import { Hero } from "@/app/components/Hero";
-import { Features } from "@/app/components/Features";
-import { HowItWorks } from "@/app/components/HowItWorks";
-import { CTA } from "@/app/components/CTA";
+import { Hero } from "../components/Hero";
+import { Features } from "../components/Features";
+import { HowItWorks } from "../components/HowItWorks";
+import { CTA } from "../components/CTA";
 
 export function Home() {
   return (

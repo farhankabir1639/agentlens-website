@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Calendar, Clock, ArrowRight } from "lucide-react";
-import type { BlogPost } from "@/data/blog-posts";
+import type { BlogPost } from "../../data/blog-posts";
 
 interface BlogCardProps {
   post: BlogPost;

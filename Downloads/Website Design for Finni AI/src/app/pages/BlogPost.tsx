@@ -1,7 +1,7 @@
 import { useParams, Link } from "react-router-dom";
-import { blogPosts } from "@/data/blog-posts";
+import { blogPosts } from "../../data/blog-posts";
 import { Calendar, Clock, ArrowLeft, Tag } from "lucide-react";
-import { Button } from "@/app/components/ui/button";
+import { Button } from "../components/ui/button";
 
 export function BlogPost() {
   const { id } = useParams<{ id: string }>();
